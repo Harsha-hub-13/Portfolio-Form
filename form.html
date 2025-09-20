@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Portfolio Form</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #6c9fdd;
+      padding: 30px;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      max-width: 750px;
+      margin: auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .dynamic-section {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <form id="portfolioForm">
+    <h2>Create Your Portfolio</h2>
+
+    <input type="text" id="name" placeholder="Your Name" required />
+    <textarea id="about" placeholder="About You" required></textarea>
+    <input type="email" id="email" placeholder="Your Email" required />
+
+    <label>Upload Profile Photo:</label>
+    <input type="file" id="photo" accept="image/*" required />
+
+    <label>How many skills?</label>
+    <input type="number" id="skillCount" min="1" required />
+    <div id="skillsContainer" class="dynamic-section"></div>
+
+    <label>How many projects?</label>
+    <input type="number" id="projectCount" min="1" required />
+    <div id="projectsContainer" class="dynamic-section"></div>
+
+    <label>How many certificates?</label>
+    <input type="number" id="certCount" min="1" required />
+    <div id="certContainer" class="dynamic-section"></div>
+
+    <h3>Contact Info</h3>
+    <input type="text" id="contactPhone" placeholder="Phone Number" required />
+    <input type="text" id="contactAddress" placeholder="Your Address" required />
+
+    <button type="submit">Generate Portfolio</button>
+  </form>
+
+  <script>
+    document.getElementById("skillCount").addEventListener("change", function () {
+      const count = parseInt(this.value);
+      const container = document.getElementById("skillsContainer");
+      container.innerHTML = "";
+      for (let i = 1; i <= count; i++) {
+        container.innerHTML += `<input type="text" placeholder="Skill ${i}" class="skill" required />`;
+      }
+    });
+
+    document.getElementById("projectCount").addEventListener("change", function () {
+      const count = parseInt(this.value);
+      const container = document.getElementById("projectsContainer");
+      container.innerHTML = "";
+      for (let i = 1; i <= count; i++) {
+        container.innerHTML += `
+        <input type="text" placeholder="Project ${i} Title" class="project-title" required />
+        <textarea placeholder="Project ${i} Description" class="project-desc" required></textarea>
+        <input type="url" placeholder="Project ${i} Link" class="project-link" />
+        <label>Upload Game Images for Project ${i}:</label>
+        <input type="file" class="project-images" accept="image/*" multiple />
+      `;
+      }
+    });
+
+    document.getElementById("certCount").addEventListener("change", function () {
+      const count = parseInt(this.value);
+      const container = document.getElementById("certContainer");
+      container.innerHTML = "";
+      for (let i = 1; i <= count; i++) {
+        container.innerHTML += `
+        <input type="text" placeholder="Certificate ${i} Name" class="cert-name" required />
+        <input type="file" class="certificate" accept="image/*,.pdf" required />
+        <input type="url" placeholder="Certificate ${i} Link (optional)" class="cert-link" />
+      `;
+      }
+    });
+
+    document.getElementById("portfolioForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const reader = new FileReader();
+      const photoFile = document.getElementById("photo").files[0];
+
+      reader.onloadend = function () {
+        const skills = Array.from(document.querySelectorAll(".skill")).map(el => el.value);
+
+        const projectTitles = document.querySelectorAll(".project-title");
+        const projectDescs = document.querySelectorAll(".project-desc");
+        const projectLinks = document.querySelectorAll(".project-link");
+        const projectImagesInputs = document.querySelectorAll(".project-images");
+
+        const projects = [];
+        let projectImageReaders = 0;
+        let projectImageTotal = projectImagesInputs.length;
+
+        projectImagesInputs.forEach((input, i) => {
+          const files = Array.from(input.files);
+          const imagesBase64 = [];
+          let loaded = 0;
+
+          if (files.length === 0) {
+            projects[i] = {
+              title: projectTitles[i].value,
+              description: projectDescs[i].value,
+              link: projectLinks[i].value,
+              images: []
+            };
+            projectImageReaders++;
+            if (projectImageReaders === projectImageTotal) finish();
+          } else {
+            files.forEach((file, j) => {
+              const reader = new FileReader();
+              reader.onloadend = function () {
+                imagesBase64[j] = reader.result;
+                loaded++;
+                if (loaded === files.length) {
+                  projects[i] = {
+                    title: projectTitles[i].value,
+                    description: projectDescs[i].value,
+                    link: projectLinks[i].value,
+                    images: imagesBase64
+                  };
+                  projectImageReaders++;
+                  if (projectImageReaders === projectImageTotal) finish();
+                }
+              };
+              reader.readAsDataURL(file);
+            });
+          }
+        });
+
+        function finish() {
+          const certNames = document.querySelectorAll(".cert-name");
+          const certFiles = document.querySelectorAll(".certificate");
+          const certLinks = document.querySelectorAll(".cert-link");
+          const certsFinal = [];
+          let filesProcessed = 0;
+
+          certFiles.forEach((fileInput, index) => {
+            const file = fileInput.files[0];
+            const fileReader = new FileReader();
+
+            fileReader.onloadend = function () {
+              certsFinal[index] = {
+                name: certNames[index].value,
+                file: fileReader.result,
+                link: certLinks[index].value
+              };
+              filesProcessed++;
+
+              if (filesProcessed === certFiles.length) {
+                const data = {
+                  name: document.getElementById("name").value,
+                  about: document.getElementById("about").value,
+                  email: document.getElementById("email").value,
+                  photo: reader.result,
+                  skills: skills,
+                  projects: projects,
+                  certificates: certsFinal,
+                  phone: document.getElementById("contactPhone").value,
+                  address: document.getElementById("contactAddress").value
+                };
+                localStorage.setItem("portfolioData", JSON.stringify(data));
+                window.location.href = "portfolio.html";
+              }
+            };
+
+            if (file) fileReader.readAsDataURL(file);
+          });
+        }
+      };
+
+      if (photoFile) reader.readAsDataURL(photoFile);
+      else alert("Please upload a profile photo.");
+    });
+  </script>
+</body>
+
+</html>
